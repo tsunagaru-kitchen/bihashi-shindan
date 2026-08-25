@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>美箸診断 | つながるキッチン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ai-indigo:#1f3a52;
+    --ai-indigo-deep:#122333;
+    --washi:#f4eede;
+    --washi-soft:#eee6d2;
+    --sumi:#2b2620;
+    --sumi-soft:#5c564b;
+    --take:#5d7a5b;
+    --take-soft:#e4ead9;
+    --kaki:#a8432e;
+    --kaki-soft:#f1ddd4;
+    --line:#3fb539;
+    --serif:'Shippori Mincho', serif;
+    --sans:'Zen Kaku Gothic New','Hiragino Sans','Noto Sans JP',sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    color:var(--sumi);
+    background:var(--washi);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .stage{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    position:relative;
+  }
+  .screen{
+    display:none;
+    min-height:100vh;
+    padding:44px 28px 56px;
+    animation:rise .55s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .screen.active{display:flex; flex-direction:column;}
+  @keyframes rise{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .screen{animation:none;}
+    *{scroll-behavior:auto !important;}
+  }
+
+  .screen--night{
+    background:
+      radial-gradient(680px 420px at 50% -8%, rgba(255,255,255,0.06), transparent 60%),
+      linear-gradient(180deg, var(--ai-indigo), var(--ai-indigo-deep));
+    color:#f4eede;
+  }
+  .screen--night .eyebrow{color:#c7d3d9;}
+
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:.28em;
+    color:var(--sumi-soft);
+    text-transform:uppercase;
+    font-weight:700;
+  }
+
+  .hero{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    text-align:center;
+  }
+  .hero .mark{margin:0 auto 22px;}
+  .hero h1{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:clamp(28px,7vw,38px);
+    line-height:1.55;
+    margin:0 0 18px;
+    letter-spacing:.02em;
+  }
+  .hero h1 em{
+    font-style:normal;
+    display:block;
+    font-size:.62em;
+    color:#d7cba0;
+    margin-top:6px;
+    letter-spacing:.1em;
+  }
+  .hero p.lead{
+    font-size:14.5px;
+    line-height:2;
+    color:#dfe6e9;
+    max-width:320px;
+    margin:0 auto;
+  }
+  .brandline{
+    text-align:center;
+    font-size:11.5px;
+    letter-spacing:.16em;
+    color:#a9b6bd;
+    margin-top:28px;
+  }
+
+  .btn{
+    appearance:none; border:none; cursor:pointer;
+    font-family:var(--sans); font-weight:700; font-size:15.5px;
+    letter-spacing:.04em; padding:16px 20px; border-radius:2px;
+    width:100%; display:flex; align-items:center; justify-content:center;
+    gap:8px; transition:transform .15s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--kaki); color:#fbf3ec;}
+  .btn-ghost{background:transparent; color:#f4eede; border:1px solid rgba(244,238,222,0.45);}
+  .btn-outline{background:transparent; color:var(--sumi); border:1px solid rgba(43,38,32,0.3);}
+  .btn[disabled]{opacity:.35; pointer-events:none;}
+  .btn .arrow{transition:transform .2s ease;}
+  .btn:hover .arrow{transform:translateX(3px);}
+  .cta-wrap{margin-top:34px;}
+
+  .step-progress{display:flex; gap:6px; margin-bottom:22px;}
+  .step-progress i{
+    flex:1; height:3px; background:var(--washi-soft);
+    border-radius:2px; overflow:hidden; position:relative;
+  }
+  .step-progress i::after{
+    content:''; position:absolute; inset:0; background:var(--ai-indigo);
+    transform:scaleX(0); transform-origin:left; transition:transform .4s ease;
+  }
+  .step-progress i.done::after{transform:scaleX(1);}
+
+  .step-title{font-family:var(--serif); font-size:22px; font-weight:600; margin:0 0 6px;}
+  .step-sub{font-size:13px; color:var(--sumi-soft); line-height:1.8; margin:0 0 26px;}
+
+  .measure-fig{display:flex; justify-content:center; margin:6px 0 16px;}
+  .measure-fig svg{width:100%; max-width:300px; height:auto;}
+  .measure-cap{text-align:center; font-size:12px; color:var(--sumi-soft); letter-spacing:.04em; margin-top:4px; line-height:1.7;}
+
+  .field{margin:22px 0 8px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--sumi-soft); margin-bottom:10px;}
+  .input-row{display:flex; align-items:baseline; gap:10px; border-bottom:1.5px solid var(--sumi); padding-bottom:10px;}
+  .input-row input{
+    flex:1; border:none; background:transparent; outline:none;
+    font-family:var(--serif); font-size:34px; font-weight:600; color:var(--sumi); width:100%;
+  }
+  .input-row input::-webkit-outer-spin-button,
+  .input-row input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .input-row .unit{font-size:14px; color:var(--sumi-soft); font-weight:700;}
+  .hint-note{font-size:12px; color:var(--sumi-soft); line-height:1.9; margin-top:10px;}
+
+  .result-preview{margin-top:26px; padding:18px 18px 20px; background:var(--take-soft); border-radius:3px; text-align:center;}
+  .result-preview .rp-label{font-size:11.5px; letter-spacing:.1em; color:var(--take); font-weight:700;}
+  .result-preview .rp-num{font-family:var(--serif); font-weight:700; font-size:40px; color:var(--sumi); margin-top:6px;}
+  .result-preview .rp-num span{font-size:16px; font-weight:600; margin-left:3px;}
+  .result-preview .rp-sub{font-size:11.5px; color:var(--sumi-soft); margin-top:4px;}
+
+  .step-foot{margin-top:auto; padding-top:30px;}
+
+  .qblock{margin-bottom:30px;}
+  .qblock .qn{font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--kaki); margin-bottom:6px;}
+  .qblock .qt{font-family:var(--serif); font-size:17px; font-weight:600; line-height:1.6; margin-bottom:14px;}
+  .opt{
+    display:block; width:100%; text-align:left; background:#fff;
+    border:1.5px solid rgba(43,38,32,0.12); border-radius:3px; padding:14px 16px; margin-bottom:10px;
+    font-family:var(--sans); font-size:14px; color:var(--sumi); cursor:pointer; transition:all .15s ease;
+  }
+  .opt:active{transform:scale(.99);}
+  .opt.selected{border-color:var(--ai-indigo); background:#fff; box-shadow:inset 0 0 0 1.5px var(--ai-indigo);}
+  .opt .oi{
+    display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%;
+    border:1.5px solid rgba(43,38,32,0.25); margin-right:10px; vertical-align:middle; position:relative; top:-1px;
+  }
+  .opt.selected .oi{border-color:var(--ai-indigo); background:var(--ai-indigo);}
+  .opt.selected .oi::after{content:''; position:absolute; inset:4px; border-radius:50%; background:#fff;}
+
+  .score-ring-wrap{display:flex; justify-content:center; margin:10px 0 8px;}
+  .score-ring{position:relative; width:172px; height:172px;}
+  .score-ring svg{width:100%; height:100%; transform:rotate(-90deg);}
+  .score-ring .track{fill:none; stroke:rgba(244,238,222,0.16); stroke-width:10;}
+  .score-ring .bar{fill:none; stroke:#d7cba0; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1);}
+  .score-ring .num{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .score-ring .num .pct{font-family:var(--serif); font-size:42px; font-weight:700; color:#f4eede; line-height:1;}
+  .score-ring .num .pct span{font-size:19px; font-weight:600;}
+  .score-ring .num .lbl{font-size:10.5px; letter-spacing:.14em; color:#c7d3d9; margin-top:6px;}
+
+  .score-msg{text-align:center; font-size:14px; line-height:2; color:#dfe6e9; margin:22px auto 0; max-width:320px;}
+  .tips{margin-top:28px;}
+  .tips .tip{
+    display:flex; gap:12px; background:rgba(244,238,222,0.06); border:1px solid rgba(244,238,222,0.16);
+    border-radius:3px; padding:14px 16px; margin-bottom:10px; font-size:13px; line-height:1.9; color:#e9e3d0;
+  }
+  .tips .tip b{display:block; color:#f4eede; font-size:12.5px; letter-spacing:.05em; margin-bottom:3px;}
+
+  .result-card{background:var(--washi); color:var(--sumi); border-radius:4px; padding:26px 22px; margin-top:24px;}
+  .rc-row{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:6px;}
+  .rc-label{font-size:11.5px; font-weight:700; letter-spacing:.08em; color:var(--sumi-soft);}
+  .rc-num{font-family:var(--serif); font-weight:700; font-size:30px;}
+  .rc-num span{font-size:14px; font-weight:600;}
+
+  .checklist{margin-top:22px; padding-top:20px; border-top:1px dashed rgba(43,38,32,0.25);}
+  .checklist h3{font-family:var(--serif); font-size:15px; font-weight:600; margin:0 0 14px;}
+  .checklist ol{margin:0; padding:0; list-style:none;}
+  .checklist li{display:flex; gap:12px; font-size:13px; line-height:1.9; color:var(--sumi); margin-bottom:10px;}
+  .checklist li .num{
+    flex:none; width:20px; height:20px; border-radius:50%; background:var(--ai-indigo); color:#fff;
+    font-size:10.5px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+
+  .product-card{
+    margin-top:26px; background:var(--take-soft); border-radius:4px; padding:22px 20px;
+  }
+  .product-card .pc-eyebrow{font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--take); margin-bottom:8px;}
+  .product-card h3{font-family:var(--serif); font-size:19px; font-weight:700; margin:0 0 10px; color:var(--sumi);}
+  .product-card p{font-size:13px; line-height:2; color:var(--sumi-soft); margin:0 0 16px;}
+  .product-card .pc-facts{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+  .product-card .pc-facts span{
+    font-size:11px; font-weight:700; background:#fff; color:var(--take);
+    border:1px solid rgba(93,122,91,0.3); border-radius:20px; padding:5px 12px;
+  }
+
+  .foot-note{text-align:center; font-size:11px; color:var(--sumi-soft); line-height:2; margin-top:26px;}
+  .screen--night .foot-note{color:#a9b6bd;}
+  .retry{text-align:center; margin-top:18px;}
+  .retry button{background:none; border:none; font-family:var(--sans); font-size:12.5px; color:var(--sumi-soft); text-decoration:underline; cursor:pointer;}
+  .screen--night .retry button{color:#c7d3d9;}
+
+  .top-brand{display:flex; align-items:center; justify-content:center; gap:8px; font-size:11px; letter-spacing:.14em; color:var(--sumi-soft); margin-bottom:24px;}
+  .top-brand .dot{width:4px; height:4px; border-radius:50%; background:var(--kaki);}
+  .screen--night .top-brand{color:#a9b6bd;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ============ SCREEN 0: INTRO ============ -->
+  <section class="screen screen--night active" data-screen="intro">
+    <div class="top-brand"><span>つながるキッチン</span><span class="dot"></span><span>美箸診断</span></div>
+    <div class="hero">
+      <!-- 修正ポイント1: 横向きの箸アイコン -->
+      <div class="mark">
+        <svg width="60" height="30" viewBox="0 0 60 30" fill="none">
+          <line x1="4" y1="10" x2="56" y2="14" stroke="#d7cba0" stroke-width="2" stroke-linecap="round"/>
+          <line x1="4" y1="20" x2="56" y2="16" stroke="#d7cba0" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1>あなたの箸は、<br>美しく持てていますか？<em>美箸診断</em></h1>
+      <p class="lead">3つの質問で、あなたの「美箸％」と、<br>あなたに合った箸サイズを診断します。</p>
+      <div class="cta-wrap">
+        <button class="btn btn-primary" onclick="goTo('quiz')">診断をはじめる <span class="arrow">→</span></button>
+      </div>
+    </div>
+    <div class="brandline">所要時間 約1分・監修：つながるキッチン</div>
+  </section>
+
+  <!-- ============ SCREEN 1: QUIZ (美箸チェック) ============ -->
+  <section class="screen" data-screen="quiz">
+    <div class="step-progress"><i id="pg1"></i><i></i></div>
+    <div class="step-head">
+      <div class="eyebrow">STEP 1 / 2</div>
+      <h2 class="step-title">美箸チェック</h2>
+      <p class="step-sub">今のお箸との付き合い方を、3つの質問で振り返ってみましょう。</p>
+    </div>
+
+    <div class="qblock">
+      <div class="qn">Q1</div>
+      <div class="qt">手に合ったサイズのお箸を使っていますか？</div>
+      <div class="opts" data-q="1">
+        <button class="opt" data-good="1"><span class="oi"></span>使っている</button>
+        <button class="opt" data-good="0"><span class="oi"></span>サイズが合っていないと感じる</button>
+        <button class="opt" data-good="0"><span class="oi"></span>手に合ったサイズがわからない</button>
+      </div>
+    </div>
+
+    <div class="qblock">
+      <div class="qn">Q2</div>
+      <div class="qt">お箸の素材は？</div>
+      <div class="opts" data-q="2">
+        <button class="opt" data-good="1"><span class="oi"></span>天然素材（竹や木）</button>
+        <button class="opt" data-good="0"><span class="oi"></span>プラスチック</button>
+        <button class="opt" data-good="0"><span class="oi"></span>鉄やその他</button>
+      </div>
+    </div>
+
+    <div class="qblock">
+      <div class="qn">Q3</div>
+      <div class="qt">リラックスして持てていますか？</div>
+      <div class="opts" data-q="3">
+        <button class="opt" data-good="1"><span class="oi"></span>持てている</button>
+        <button class="opt" data-good="0"><span class="oi"></span>爪が白く、力んだ持ち方になっている</button>
+      </div>
+    </div>
+
+    <div class="step-foot">
+      <button class="btn btn-primary" id="toDiag" disabled onclick="showDiagnosis()">診断結果を見る <span class="arrow">→</span></button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 2: DIAGNOSIS RESULT (美箸%) ============ -->
+  <section class="screen screen--night" data-screen="diagnosis">
+    <div class="top-brand"><span>つながるキッチン</span><span class="dot"></span><span>診断結果</span></div>
+    <div class="eyebrow" style="text-align:center;">YOUR SCORE</div>
+
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <svg viewBox="0 0 160 160">
+          <circle class="track" cx="80" cy="80" r="70"></circle>
+          <circle class="bar" id="scoreBar" cx="80" cy="80" r="70" stroke-dasharray="440" stroke-dashoffset="440"></circle>
+        </svg>
+        <div class="num">
+          <div class="pct" id="scorePct">--<span>%</span></div>
+          <div class="lbl">美箸 度</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="score-msg" id="scoreMsg">--</p>
+
+    <div class="tips" id="scoreTips"></div>
+
+    <div class="cta-wrap">
+      <button class="btn btn-ghost" onclick="goTo('measure')">正しいサイズを測ってみる <span class="arrow">→</span></button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 3: MEASURE ============ -->
+  <section class="screen" data-screen="measure">
+    <div class="step-progress"><i class="done"></i><i class="done"></i></div>
+    <div class="step-head">
+      <div class="eyebrow">STEP 2 / 2</div>
+      <h2 class="step-title">正しいサイズを測る</h2>
+      <p class="step-sub">お箸選びは、感覚や年齢ではなく数字で決めるのが正解。<br>あなたの手の「一咫（ひとあた）」を測りましょう。</p>
+    </div>
+
+    <div class="measure-fig">
+      <svg viewBox="0 0 320 250" xmlns="http://www.w3.org/2000/svg" aria-label="一咫の測り方イラスト">
+        <!-- 90度・一咫（ひとあた）の基準ガイド線 -->
+        <g stroke="#a8432e" stroke-width="1.5" stroke-dasharray="4 4" fill="none">
+          <line x1="165" y1="45" x2="165" y2="155" />
+          <line x1="60" y1="155" x2="165" y2="155" />
+        </g>
+
+        <!-- 直角記号 (90°) -->
+        <path d="M 165,143 L 153,143 L 153,155" fill="none" stroke="#a8432e" stroke-width="1.5" />
+        <text x="135" y="148" font-family="Zen Kaku Gothic New, sans-serif" font-size="12" font-weight="700" fill="#a8432e">90°</text>
+
+        <!-- 人間の手のリアルな輪郭 -->
+        <g fill="#f4eede" stroke="#1f3a52" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+          <path d="
+            M 140,240
+            C 138,210 135,185 130,170
+            C 118,170 85,168 60,155
+            C 48,148 48,136 60,136
+            C 80,136 115,148 132,150
+            C 136,135 138,90 140,48
+            C 141,35 158,35 160,48
+            L 165,100
+            C 165,85 167,52 168,42
+            C 170,30 186,30 187,42
+            L 188,105
+            C 189,92 191,65 192,58
+            C 194,46 209,46 210,58
+            L 208,115
+            C 210,102 214,80 216,75
+            C 218,65 231,67 230,77
+            C 226,110 220,150 215,175
+            C 210,200 200,225 195,240
+            Z
+          "/>
+          <!-- 関節ディテール -->
+          <path d="M 165,100 C 163,120 162,140 162,152" stroke-width="2" opacity="0.6" fill="none" />
+          <path d="M 188,105 C 186,125 184,145 183,158" stroke-width="2" opacity="0.6" fill="none" />
+          <path d="M 208,115 C 205,130 202,148 200,162" stroke-width="2" opacity="0.6" fill="none" />
+        </g>
+
+        <!-- 一咫の測定矢印（対角線） -->
+        <g stroke="#a8432e" stroke-width="2.5" fill="#a8432e">
+          <line x1="60" y1="140" x2="148" y2="42" />
+          <polygon points="60,140 72,136 69,147" />
+          <polygon points="148,42 139,52 147,55" />
+        </g>
+
+        <!-- 測定ポイント（赤丸） -->
+        <circle cx="58" cy="142" r="4.5" fill="#a8432e" />
+        <circle cx="150" cy="40" r="4.5" fill="#a8432e" />
+
+        <!-- テキストラベル -->
+        <g font-family="Zen Kaku Gothic New, sans-serif" font-weight="700" fill="#a8432e" text-anchor="middle">
+          <text x="82" y="70" font-size="16">一咫</text>
+          <text x="82" y="86" font-size="11">（ひとあた）</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 修正ポイント2: STEP 2/2 の指定文言への変更 -->
+    <p class="measure-cap">顔の前に手をもってきて、パーをします。<br>親指と人差し指が直角に開いていることを確認します。<br>親指の先〜人差し指の先までの距離が「一咫」です。</p>
+
+    <div class="field">
+      <label for="hitoata">一咫の長さ</label>
+      <div class="input-row">
+        <input type="number" id="hitoata" inputmode="decimal" placeholder="例）15.5" min="1" max="30" step="0.1" oninput="calcLength()">
+        <span class="unit">cm</span>
+      </div>
+      <p class="hint-note">※直角に開きにくい方は無理に広げなくてOK。定規やメジャーで測ってみてください。手元にない場合はおおよそでも大丈夫です。</p>
+    </div>
+
+    <div class="result-preview" id="previewBox" style="display:none;">
+      <div class="rp-label">あなたにちょうど良い長さ（一咫半）</div>
+      <div class="rp-num" id="rpNum">-- <span>cm</span></div>
+      <div class="rp-sub">一咫 × 1.5 で算出</div>
+    </div>
+
+    <div class="step-foot">
+      <button class="btn btn-outline" id="toResult" disabled onclick="showResult()">診断結果を見る <span class="arrow">→</span></button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 4: FINAL RESULT + きみの箸 ============ -->
+  <section class="screen screen--night" data-screen="result">
+    <div class="top-brand"><span>つながるキッチン</span><span class="dot"></span><span>美箸診断 結果</span></div>
+
+    <div class="result-card">
+      <div class="rc-row">
+        <div class="rc-label">美箸％</div>
+        <div class="rc-num" id="resultPct">--<span>%</span></div>
+      </div>
+      <div class="rc-row" style="margin-top:14px;">
+        <div class="rc-label">ちょうど良い長さ</div>
+        <div class="rc-num" id="resultLen">--<span>cm</span></div>
+      </div>
+
+      <div class="checklist">
+        <h3>箸選び、5つのチェックポイント</h3>
+        <ol>
+          <li><span class="num">1</span>手の大きさに合った長さであること</li>
+          <li><span class="num">2</span>先端が四角であること</li>
+          <li><span class="num">3</span>持つところが手になじむ形（うねりや六角）であること</li>
+          <li><span class="num">4</span>すべり止めに加工がほどこされていること</li>
+          <li><span class="num">5</span>素材は竹や木など天然のものであること</li>
+        </ol>
+      </div>
+
+      <div class="product-card">
+        <div class="pc-eyebrow">RECOMMEND</div>
+        <h3>きみの箸</h3>
+        <p>原材料は孟宗竹（熊本産）100%。プラスチックや金属を使わない、完全天然素材のお箸です。今日診断した「ちょうど良い長さ」に合わせて選べます。</p>
+        <div class="pc-facts"><span>天然素材</span><span>熊本産 孟宗竹</span><span>サイズ豊富</span></div>
+        <!-- 修正ポイント3: ボタンテキストの変更 -->
+        <a class="btn btn-primary" href="#" id="productLink" target="_blank" rel="noopener">“きみの箸”を見てみる <span class="arrow">→</span></a>
+      </div>
+    </div>
+
+    <p class="foot-note" style="margin-top:30px;">監修：つながるキッチン</p>
+    <div class="retry"><button onclick="resetAll()">もう一度診断する</button></div>
+  </section>
+
+</div>
+
+<script>
+  const PRODUCT_URL = 'https://kiminohashi.jp/';
+
+  let hitoata = null;
+  let idealLen = null;
+  const quizAnswers = {1:null,2:null,3:null};
+  let goodCount = 0;
+
+  document.getElementById('productLink').href = PRODUCT_URL;
+
+  function goTo(name){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.querySelector('.screen[data-screen="'+name+'"]').classList.add('active');
+    window.scrollTo({top:0, behavior:'auto'});
+  }
+
+  // ---- Quiz ----
+  document.querySelectorAll('.opts').forEach(group=>{
+    const q = group.dataset.q;
+    group.querySelectorAll('.opt').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        group.querySelectorAll('.opt').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        quizAnswers[q] = btn.dataset.good === '1';
+        checkQuizComplete();
+      });
+    });
+  });
+
+  function checkQuizComplete(){
+    const done = quizAnswers[1]!==null && quizAnswers[2]!==null && quizAnswers[3]!==null;
+    document.getElementById('toDiag').disabled = !done;
+  }
+
+  const TIPS = {
+    1:{
+      bad:'サイズが合っていないと疲れやすく、うまく挟めない原因に。次のステップで正しい長さを測ってみましょう。'
+    },
+    2:{
+      bad:'プラスチックや金属は滑りやすく、指先に負担がかかることも。竹や木など天然素材への切り替えがおすすめです。'
+    },
+    3:{
+      bad:'爪が白くなるのは力みのサイン。箸のサイズや形が合っていないことも一因です。'
+    }
+  };
+  const TIP_TITLES = {1:'サイズについて', 2:'素材について', 3:'持ち方について'};
+
+  function showDiagnosis(){
+    goodCount = Object.values(quizAnswers).filter(v=>v===true).length;
+    const pct = Math.round((goodCount/3)*100);
+
+    const circumference = 440;
+    const offset = circumference - (circumference * pct/100);
+    const bar = document.getElementById('scoreBar');
+    document.getElementById('scorePct').innerHTML = pct + '<span>%</span>';
+
+    let msg = '';
+    if(pct === 100) msg = 'すばらしい！すでに美箸を体現できています。改めて正しいサイズのお箸が使えているか確認してみましょう。';
+    else if(pct >= 60) msg = 'あと一歩。いくつかの見直しで、もっと美箸に近づけます。';
+    else if(pct >= 30) msg = '見直しどころが、いくつかありそうです。';
+    else msg = 'これから変えられるポイントが、たくさんあります。';
+    document.getElementById('scoreMsg').textContent = msg;
+
+    const tipsBox = document.getElementById('scoreTips');
+    tipsBox.innerHTML = '';
+    [1,2,3].forEach(q=>{
+      if(quizAnswers[q] === false){
+        const div = document.createElement('div');
+        div.className = 'tip';
+        div.innerHTML = '<div><b>'+TIP_TITLES[q]+'</b>'+TIPS[q].bad+'</div>';
+        tipsBox.appendChild(div);
+      }
+    });
+
+    goTo('diagnosis');
+    requestAnimationFrame(()=>{ bar.style.strokeDashoffset = offset; });
+  }
+
+  // ---- Measure ----
+  function calcLength(){
+    const v = parseFloat(document.getElementById('hitoata').value);
+    const box = document.getElementById('previewBox');
+    const btn = document.getElementById('toResult');
+    if(!isNaN(v) && v > 0){
+      hitoata = v;
+      idealLen = Math.round(v*1.5*10)/10;
+      document.getElementById('rpNum').innerHTML = idealLen.toFixed(1) + ' <span>cm</span>';
+      box.style.display = 'block';
+      btn.disabled = false;
+    } else {
+      box.style.display = 'none';
+      btn.disabled = true;
+      idealLen = null;
+    }
+  }
+
+  // ---- Final result ----
+  function showResult(){
+    const pct = Math.round((goodCount/3)*100);
+    document.getElementById('resultPct').innerHTML = pct + '<span>%</span>';
+    document.getElementById('resultLen').innerHTML = (idealLen!==null? idealLen.toFixed(1):'--') + '<span>cm</span>';
+    goTo('result');
+  }
+
+  function resetAll(){
+    hitoata = null; idealLen = null; goodCount = 0;
+    quizAnswers[1]=quizAnswers[2]=quizAnswers[3]=null;
+    document.getElementById('hitoata').value = '';
+    document.getElementById('previewBox').style.display = 'none';
+    document.getElementById('toResult').disabled = true;
+    document.getElementById('toDiag').disabled = true;
+    document.querySelectorAll('.opt').forEach(b=>b.classList.remove('selected'));
+    document.getElementById('scoreBar').style.strokeDashoffset = '440';
+    goTo('intro');
+  }
+</script>
+</body>
+</html>
